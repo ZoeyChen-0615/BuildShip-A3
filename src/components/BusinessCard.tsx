@@ -3,94 +3,80 @@
 import { useAuth } from "@clerk/nextjs";
 import { useState } from "react";
 
-export interface Country {
+export interface Place {
   id: string;
   name: string;
-  official_name: string;
-  flag_url: string;
-  flag_alt: string;
-  capital: string;
-  region: string;
-  subregion: string;
-  population: number;
-  area: number;
-  languages: string;
-  currencies: string;
-  map_url: string;
+  image_url: string;
+  kinds: string;
+  rate: string;
+  address: string;
+  description: string;
+  wikipedia: string;
+  url: string;
 }
 
-interface CountryCardProps {
-  country: Country;
+interface PlaceCardProps {
+  place: Place;
   savedIds: Set<string>;
-  onSave: (country: Country) => void;
+  onSave: (place: Place) => void;
 }
 
-function formatPopulation(pop: number): string {
-  if (pop >= 1_000_000_000) return `${(pop / 1_000_000_000).toFixed(1)}B`;
-  if (pop >= 1_000_000) return `${(pop / 1_000_000).toFixed(1)}M`;
-  if (pop >= 1_000) return `${(pop / 1_000).toFixed(1)}K`;
-  return pop.toString();
-}
-
-export function CountryCard({ country, savedIds, onSave }: CountryCardProps) {
+export function PlaceCard({ place, savedIds, onSave }: PlaceCardProps) {
   const { isSignedIn } = useAuth();
   const [saving, setSaving] = useState(false);
-  const isSaved = savedIds.has(country.id);
+  const isSaved = savedIds.has(place.id);
 
   async function handleSave() {
     if (!isSignedIn || isSaved) return;
     setSaving(true);
-    onSave(country);
+    onSave(place);
     setSaving(false);
   }
 
   return (
     <div className="group overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition hover:shadow-md">
-      <div className="relative aspect-[3/2] overflow-hidden bg-stone-100">
-        <img
-          src={country.flag_url}
-          alt={country.flag_alt}
-          className="h-full w-full object-cover transition group-hover:scale-105"
-        />
-        <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-semibold text-stone-700 backdrop-blur-sm">
-          {country.region}
-        </span>
+      <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
+        {place.image_url ? (
+          <img
+            src={place.image_url}
+            alt={place.name}
+            className="h-full w-full object-cover transition group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-gradient-to-br from-amber-50 to-stone-100 text-stone-300">
+            <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+          </div>
+        )}
+        {place.kinds && (
+          <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-stone-600 backdrop-blur-sm line-clamp-1">
+            {place.kinds.split(",")[0].trim()}
+          </span>
+        )}
       </div>
 
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-stone-900">{country.name}</h3>
-        <p className="text-xs text-stone-400">{country.official_name}</p>
-
-        <div className="mt-3 space-y-1.5">
-          <div className="flex items-center gap-2 text-sm text-stone-600">
-            <span className="font-medium">Capital:</span>
-            <span>{country.capital}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-stone-600">
-            <span className="font-medium">Population:</span>
-            <span>{formatPopulation(country.population)}</span>
-          </div>
-          {country.languages && (
-            <p className="text-xs text-stone-500 line-clamp-1">
-              <span className="font-medium">Languages:</span> {country.languages}
-            </p>
-          )}
-          {country.currencies && (
-            <p className="text-xs text-stone-500 line-clamp-1">
-              <span className="font-medium">Currency:</span> {country.currencies}
-            </p>
-          )}
-        </div>
+        <h3 className="font-semibold text-stone-900 line-clamp-1">{place.name}</h3>
+        {place.address && (
+          <p className="mt-0.5 text-xs text-stone-400 line-clamp-1">{place.address}</p>
+        )}
+        {place.description && (
+          <p className="mt-2 text-xs leading-relaxed text-stone-500 line-clamp-3">
+            {place.description}
+          </p>
+        )}
 
         <div className="mt-3 flex items-center gap-2">
-          {country.map_url && (
+          {(place.wikipedia || place.url) && (
             <a
-              href={country.map_url}
+              href={place.wikipedia || place.url}
               target="_blank"
               rel="noopener noreferrer"
               className="flex-1 rounded-lg border border-stone-200 px-3 py-1.5 text-center text-xs font-medium text-stone-600 transition hover:bg-stone-50"
             >
-              View on Map
+              Learn More
             </a>
           )}
           {isSignedIn && (

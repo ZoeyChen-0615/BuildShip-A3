@@ -1,10 +1,10 @@
 # Tourism Gallery
 
-A full-stack travel bucket list app built with Next.js + Tailwind CSS.
+A full-stack tourism discovery app built with Next.js + Tailwind CSS.
 
 ## What it does
 
-Users search for or browse countries using the REST Countries API. Results display in a visual gallery with flags, capitals, population, languages, and currencies. Authenticated users can save countries to their travel bucket list (stored in Supabase).
+Users type in a city name and discover famous landmarks, museums, restaurants, entertainment venues, and attractions via the OpenTripMap API. Results display in a visual gallery with images and descriptions. Authenticated users can save their favorite places to their account (stored in Supabase).
 
 ## Tech Stack
 
@@ -12,7 +12,7 @@ Users search for or browse countries using the REST Countries API. Results displ
 - **Styling:** Tailwind CSS
 - **Auth:** Clerk (sign up, sign in, sign out)
 - **Database:** Supabase (PostgreSQL)
-- **External API:** REST Countries API v3.1 (no key needed)
+- **External API:** OpenTripMap API (free key)
 
 ## Data Model
 
@@ -22,21 +22,21 @@ Users search for or browse countries using the REST Countries API. Results displ
 |-------------|-------------|--------------------------------|
 | id          | uuid (PK)   | Auto-generated                 |
 | user_id     | text         | Clerk user ID                  |
-| place_id    | text         | Country code (cca3)            |
-| name        | text         | Country name                   |
-| image_url   | text         | Flag SVG URL                   |
+| place_id    | text         | OpenTripMap xid                |
+| name        | text         | Place name                     |
+| image_url   | text         | Preview image URL              |
 | rating      | numeric      | (unused, reserved)             |
 | review_count| integer      | (unused, reserved)             |
-| location    | text         | Capital, Region                |
-| categories  | text         | Subregion                      |
-| price       | text         | Population (formatted)         |
-| url         | text         | Google Maps URL                |
+| location    | text         | City, State, Country           |
+| categories  | text         | Place kinds (e.g. cultural)    |
+| price       | text         | (unused, reserved)             |
+| url         | text         | Wikipedia or OpenTripMap URL   |
 | created_at  | timestamptz  | When user saved it             |
 
 ## Style Preferences
 
 - Clean, modern UI with generous whitespace
-- Responsive grid layout for country cards
+- Responsive grid layout for place cards
 - Warm color palette (amber/orange tones for tourism theme)
 - Bold typography for headings
 
