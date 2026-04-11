@@ -4,6 +4,17 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { SearchBar } from "@/components/SearchBar";
 import { PlaceCard, Place } from "@/components/BusinessCard";
+import { PlaceImage } from "@/components/PlaceImage";
+
+interface CommunityFavorite {
+  id: string;
+  place_id: string;
+  name: string;
+  image_url: string;
+  location: string;
+  categories: string;
+  url: string;
+}
 
 export default function Home() {
   const { isSignedIn } = useAuth();
@@ -13,6 +24,25 @@ export default function Home() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState("");
   const [cityInfo, setCityInfo] = useState("");
+  const [communityFavorites, setCommunityFavorites] = useState<CommunityFavorite[]>([]);
+  const [loadingCommunity, setLoadingCommunity] = useState(true);
+
+  // Load community favorites on mount
+  useEffect(() => {
+    async function loadCommunity() {
+      try {
+        const res = await fetch("/api/favorites?mode=community");
+        if (res.ok) {
+          const data = await res.json();
+          setCommunityFavorites(data);
+        }
+      } catch {
+        // silently fail
+      }
+      setLoadingCommunity(false);
+    }
+    loadCommunity();
+  }, []);
 
   const loadSavedIds = useCallback(async () => {
     if (!isSignedIn) return;
@@ -114,16 +144,68 @@ export default function Home() {
           No places found. Try a different city or category.
         </p>
       ) : (
-        <div className="py-16 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
-            <svg className="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-          </div>
-          <p className="text-stone-500">
-            Enter a city name to discover its best spots
-          </p>
+        /* Default view: show community favorites */
+        <div>
+          {loadingCommunity ? (
+            <div className="flex justify-center py-20">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-600 border-t-transparent" />
+            </div>
+          ) : communityFavorites.length > 0 ? (
+            <>
+              <div className="mb-6 flex items-center gap-3">
+                <div className="h-px flex-1 bg-stone-200" />
+                <h2 className="text-lg font-semibold text-stone-700">
+                  Saved by the Community
+                </h2>
+                <div className="h-px flex-1 bg-stone-200" />
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {communityFavorites.map((fav) => (
+                  <div
+                    key={fav.id}
+                    className="group overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition hover:shadow-md"
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
+                      <PlaceImage src={fav.image_url} alt={fav.name} />
+                      {fav.categories && (
+                        <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-stone-600 backdrop-blur-sm">
+                          {fav.categories.split(",")[0].trim()}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-stone-900 line-clamp-1">{fav.name}</h3>
+                      {fav.location && (
+                        <p className="mt-0.5 text-xs text-stone-400 line-clamp-1">{fav.location}</p>
+                      )}
+                      {fav.url && (
+                        <a
+                          href={fav.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 block rounded-lg border border-stone-200 px-3 py-1.5 text-center text-xs font-medium text-stone-600 transition hover:bg-stone-50"
+                        >
+                          Learn More
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="py-16 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                <svg className="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+                </svg>
+              </div>
+              <p className="text-stone-500">
+                Enter a city name to discover its best spots
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

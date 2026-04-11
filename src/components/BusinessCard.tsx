@@ -2,6 +2,7 @@
 
 import { useAuth } from "@clerk/nextjs";
 import { useState } from "react";
+import { PlaceImage } from "@/components/PlaceImage";
 
 export interface Place {
   id: string;
@@ -36,20 +37,7 @@ export function PlaceCard({ place, savedIds, onSave }: PlaceCardProps) {
   return (
     <div className="group overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition hover:shadow-md">
       <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
-        {place.image_url ? (
-          <img
-            src={place.image_url}
-            alt={place.name}
-            className="h-full w-full object-cover transition group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center bg-gradient-to-br from-amber-50 to-stone-100 text-stone-300">
-            <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
-            </svg>
-          </div>
-        )}
+        <PlaceImage src={place.image_url} alt={place.name} />
         {place.kinds && (
           <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-stone-600 backdrop-blur-sm line-clamp-1">
             {place.kinds.split(",")[0].trim()}

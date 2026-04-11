@@ -1,13 +1,33 @@
 import { auth } from "@clerk/nextjs/server";
 import { getSupabase } from "@/lib/supabase";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const url = new URL(request.url);
+  const mode = url.searchParams.get("mode");
+
+  const supabase = getSupabase();
+
+  // Public community view — return all favorites from all users
+  if (mode === "community") {
+    const { data, error } = await supabase
+      .from("favorites")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(40);
+
+    if (error) {
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    return Response.json(data);
+  }
+
+  // Authenticated user's own favorites
   const { userId } = await auth();
   if (!userId) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const supabase = getSupabase();
   const { data, error } = await supabase
     .from("favorites")
     .select("*")

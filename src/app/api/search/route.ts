@@ -25,11 +25,51 @@ interface PlaceDetail {
   kinds: string;
   rate: string;
   address?: { city?: string; state?: string; country?: string };
-  preview?: { source: string };
+  preview?: { source: string; height: number; width: number };
   image?: string;
   wikipedia?: string;
   otm?: string;
   wikipedia_extracts?: { text: string };
+}
+
+// Use Special:FilePath which doesn't get rate-limited like thumbnail URLs
+function getImageUrl(detail: PlaceDetail): string {
+  if (detail.image) {
+    const match = detail.image.match(/File:(.+)$/);
+    if (match) {
+      const filename = decodeURIComponent(match[1]);
+      return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=400`;
+    }
+  }
+  return detail.preview?.source || "";
+}
+
+// Fetch details in small batches with delay to avoid rate limits
+async function fetchDetailsBatched(xids: string[]): Promise<(PlaceDetail | null)[]> {
+  const results: (PlaceDetail | null)[] = [];
+  const batchSize = 4;
+
+  for (let i = 0; i < xids.length; i += batchSize) {
+    const batch = xids.slice(i, i + batchSize);
+    const batchResults = await Promise.all(
+      batch.map(async (xid): Promise<PlaceDetail | null> => {
+        try {
+          const res = await fetch(`${BASE}/xid/${xid}?apikey=${API_KEY}`);
+          if (!res.ok) return null;
+          return res.json();
+        } catch {
+          return null;
+        }
+      })
+    );
+    results.push(...batchResults);
+    // Small delay between batches
+    if (i + batchSize < xids.length) {
+      await new Promise((r) => setTimeout(r, 100));
+    }
+  }
+
+  return results;
 }
 
 export async function GET(request: NextRequest) {
@@ -76,25 +116,16 @@ export async function GET(request: NextRequest) {
     .sort((a, b) => b.properties.rate - a.properties.rate)
     .slice(0, 12);
 
-  // Step 3: Fetch details for each place (in parallel)
-  const details = await Promise.all(
-    named.map(async (f): Promise<PlaceDetail | null> => {
-      try {
-        const res = await fetch(`${BASE}/xid/${f.properties.xid}?apikey=${API_KEY}`);
-        if (!res.ok) return null;
-        return res.json();
-      } catch {
-        return null;
-      }
-    })
-  );
+  // Step 3: Fetch details in batches
+  const xids = named.map((f) => f.properties.xid);
+  const details = await fetchDetailsBatched(xids);
 
   const places = details
     .filter((d): d is PlaceDetail => d !== null && !!d.name)
     .map((d) => ({
       id: d.xid,
       name: d.name,
-      image_url: d.preview?.source || "",
+      image_url: getImageUrl(d),
       kinds: d.kinds
         ?.split(",")
         .slice(0, 3)
