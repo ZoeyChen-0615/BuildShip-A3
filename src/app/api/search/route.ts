@@ -2,37 +2,69 @@ import { NextRequest } from "next/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const term = searchParams.get("term") || "restaurants";
-  const location = searchParams.get("location") || "New York";
+  const query = searchParams.get("query") || "";
+  const region = searchParams.get("region") || "";
 
-  const apiKey = process.env.YELP_API_KEY;
-  if (!apiKey) {
-    return Response.json({ error: "Yelp API key not configured" }, { status: 500 });
+  let url: string;
+
+  if (query) {
+    // Search by country name
+    url = `https://restcountries.com/v3.1/name/${encodeURIComponent(query)}?fields=cca3,name,flags,capital,region,subregion,population,languages,currencies,area,maps`;
+  } else if (region) {
+    // Browse by region
+    url = `https://restcountries.com/v3.1/region/${encodeURIComponent(region)}?fields=cca3,name,flags,capital,region,subregion,population,languages,currencies,area,maps`;
+  } else {
+    // Default: return all countries
+    url = `https://restcountries.com/v3.1/all?fields=cca3,name,flags,capital,region,subregion,population,languages,currencies,area,maps`;
   }
 
-  const params = new URLSearchParams({
-    term,
-    location,
-    limit: "20",
-    sort_by: "best_match",
-  });
-
-  const res = await fetch(
-    `https://api.yelp.com/v3/businesses/search?${params}`,
-    {
-      headers: { Authorization: `Bearer ${apiKey}` },
-      next: { revalidate: 300 }, // cache for 5 minutes
-    }
-  );
+  const res = await fetch(url, { next: { revalidate: 3600 } });
 
   if (!res.ok) {
-    const error = await res.text();
+    if (res.status === 404) {
+      return Response.json({ countries: [] });
+    }
     return Response.json(
-      { error: "Failed to fetch from Yelp API", details: error },
+      { error: "Failed to fetch countries" },
       { status: res.status }
     );
   }
 
   const data = await res.json();
-  return Response.json(data);
+
+  const countries = (Array.isArray(data) ? data : []).map(
+    (c: Record<string, unknown>) => {
+      const name = c.name as { common: string; official: string };
+      const flags = c.flags as { png: string; svg: string; alt?: string };
+      const capital = c.capital as string[] | undefined;
+      const languages = c.languages as Record<string, string> | undefined;
+      const currencies = c.currencies as Record<string, { name: string; symbol: string }> | undefined;
+      const maps = c.maps as { googleMaps: string } | undefined;
+
+      return {
+        id: c.cca3,
+        name: name.common,
+        official_name: name.official,
+        flag_url: flags.svg,
+        flag_alt: flags.alt || `Flag of ${name.common}`,
+        capital: capital?.[0] || "N/A",
+        region: c.region,
+        subregion: c.subregion || "",
+        population: c.population,
+        area: c.area,
+        languages: languages ? Object.values(languages).join(", ") : "",
+        currencies: currencies
+          ? Object.values(currencies).map((cur) => `${cur.name} (${cur.symbol})`).join(", ")
+          : "",
+        map_url: maps?.googleMaps || "",
+      };
+    }
+  );
+
+  // Sort by name
+  countries.sort((a: { name: string }, b: { name: string }) =>
+    a.name.localeCompare(b.name)
+  );
+
+  return Response.json({ countries });
 }

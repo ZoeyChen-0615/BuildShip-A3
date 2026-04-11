@@ -1,10 +1,10 @@
 # Tourism Gallery
 
-A full-stack tourism discovery app built with Next.js + Tailwind CSS.
+A full-stack travel bucket list app built with Next.js + Tailwind CSS.
 
 ## What it does
 
-Users search for restaurants, attractions, hotels, and other businesses by city/location using the Yelp Fusion API. Results display in a visual gallery. Authenticated users can save favorites to their account (stored in Supabase).
+Users search for or browse countries using the REST Countries API. Results display in a visual gallery with flags, capitals, population, languages, and currencies. Authenticated users can save countries to their travel bucket list (stored in Supabase).
 
 ## Tech Stack
 
@@ -12,7 +12,7 @@ Users search for restaurants, attractions, hotels, and other businesses by city/
 - **Styling:** Tailwind CSS
 - **Auth:** Clerk (sign up, sign in, sign out)
 - **Database:** Supabase (PostgreSQL)
-- **External API:** Yelp Fusion API v3
+- **External API:** REST Countries API v3.1 (no key needed)
 
 ## Data Model
 
@@ -22,21 +22,21 @@ Users search for restaurants, attractions, hotels, and other businesses by city/
 |-------------|-------------|--------------------------------|
 | id          | uuid (PK)   | Auto-generated                 |
 | user_id     | text         | Clerk user ID                  |
-| yelp_id     | text         | Business ID from Yelp          |
-| name        | text         | Business name                  |
-| image_url   | text         | Photo URL                      |
-| rating      | numeric      | Yelp rating (1-5)              |
-| review_count| integer      | Number of reviews              |
-| location    | text         | Display address                |
-| categories  | text         | Comma-separated categories     |
-| price       | text         | Price level ($, $$, etc.)      |
-| url         | text         | Yelp business page URL         |
+| place_id    | text         | Country code (cca3)            |
+| name        | text         | Country name                   |
+| image_url   | text         | Flag SVG URL                   |
+| rating      | numeric      | (unused, reserved)             |
+| review_count| integer      | (unused, reserved)             |
+| location    | text         | Capital, Region                |
+| categories  | text         | Subregion                      |
+| price       | text         | Population (formatted)         |
+| url         | text         | Google Maps URL                |
 | created_at  | timestamptz  | When user saved it             |
 
 ## Style Preferences
 
 - Clean, modern UI with generous whitespace
-- Responsive grid layout for business cards
+- Responsive grid layout for country cards
 - Warm color palette (amber/orange tones for tourism theme)
 - Bold typography for headings
 

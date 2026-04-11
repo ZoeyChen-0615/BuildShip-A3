@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     .from("favorites")
     .select("id")
     .eq("user_id", userId)
-    .eq("yelp_id", body.yelp_id)
+    .eq("place_id", body.place_id)
     .single();
 
   if (existing) {
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     .from("favorites")
     .insert({
       user_id: userId,
-      yelp_id: body.yelp_id,
+      place_id: body.place_id,
       name: body.name,
       image_url: body.image_url,
       rating: body.rating,
