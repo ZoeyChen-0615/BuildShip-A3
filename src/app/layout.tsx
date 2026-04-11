@@ -33,6 +33,9 @@ export default function RootLayout({
         <body className="min-h-full flex flex-col bg-stone-50 text-stone-900">
           <Navbar />
           <main className="flex-1">{children}</main>
+          <footer className="border-t border-stone-200 bg-white/60 py-6 text-center text-sm text-stone-400">
+            Tourism Gallery &middot; {new Date().getFullYear()}
+          </footer>
         </body>
       </html>
     </ClerkProvider>

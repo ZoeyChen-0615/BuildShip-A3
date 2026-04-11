@@ -99,17 +99,22 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-stone-900 sm:text-5xl">
+      <div className="mb-10 rounded-2xl bg-gradient-to-br from-amber-50 via-white to-stone-100 px-6 py-12 text-center shadow-sm ring-1 ring-amber-100/50 sm:py-16">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100">
+          <svg className="h-7 w-7 text-amber-600" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 0A11.953 11.953 0 0 1 12 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0 1 21 12c0 .778-.099 1.533-.284 2.253m0 0A17.919 17.919 0 0 1 12 16.5a17.92 17.92 0 0 1-8.716-2.247m0 0A8.966 8.966 0 0 1 3 12c0-1.777.514-3.433 1.401-4.832" />
+          </svg>
+        </div>
+        <h1 className="text-4xl font-extrabold tracking-tight text-stone-900 sm:text-5xl">
           Tourism Gallery
         </h1>
-        <p className="mt-3 text-lg text-stone-500">
+        <p className="mx-auto mt-3 max-w-md text-lg text-stone-500">
           Search any city to discover famous landmarks, restaurants, and attractions.
         </p>
-      </div>
 
-      <div className="mx-auto mb-10 max-w-3xl">
-        <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+        <div className="mx-auto mt-8 max-w-2xl">
+          <SearchBar onSearch={handleSearch} isLoading={isLoading} />
+        </div>
       </div>
 
       {error && (
@@ -163,12 +168,13 @@ export default function Home() {
                 {communityFavorites.map((fav) => (
                   <div
                     key={fav.id}
-                    className="group overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition hover:shadow-md"
+                    className="animate-fade-in-up group overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                   >
                     <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
                       <PlaceImage src={fav.image_url} alt={fav.name} />
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/20 to-transparent" />
                       {fav.categories && (
-                        <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-xs font-medium text-stone-600 backdrop-blur-sm">
+                        <span className="absolute left-2 top-2 rounded-full bg-white/90 px-2.5 py-1 text-xs font-medium text-stone-700 shadow-sm backdrop-blur-sm">
                           {fav.categories.split(",")[0].trim()}
                         </span>
                       )}
@@ -176,14 +182,20 @@ export default function Home() {
                     <div className="p-4">
                       <h3 className="font-semibold text-stone-900 line-clamp-1">{fav.name}</h3>
                       {fav.location && (
-                        <p className="mt-0.5 text-xs text-stone-400 line-clamp-1">{fav.location}</p>
+                        <p className="mt-0.5 flex items-center gap-1 text-xs text-stone-400 line-clamp-1">
+                          <svg className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z" />
+                          </svg>
+                          {fav.location}
+                        </p>
                       )}
                       {fav.url && (
                         <a
                           href={fav.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="mt-3 block rounded-lg border border-stone-200 px-3 py-1.5 text-center text-xs font-medium text-stone-600 transition hover:bg-stone-50"
+                          className="mt-3 block rounded-lg border border-stone-200 px-3 py-1.5 text-center text-xs font-medium text-stone-600 transition hover:border-stone-300 hover:bg-stone-50"
                         >
                           Learn More
                         </a>
