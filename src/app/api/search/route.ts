@@ -32,8 +32,83 @@ interface PlaceDetail {
   wikipedia_extracts?: { text: string };
 }
 
+function getWikipediaApiUrl(wikipediaUrl: string): string | null {
+  try {
+    const url = new URL(wikipediaUrl);
+    const titlePrefix = "/wiki/";
+
+    if (!url.pathname.startsWith(titlePrefix)) return null;
+
+    const title = decodeURIComponent(url.pathname.slice(titlePrefix.length));
+    if (!title) return null;
+
+    const params = new URLSearchParams({
+      action: "query",
+      prop: "pageimages",
+      piprop: "thumbnail",
+      pithumbsize: "400",
+      titles: title,
+      format: "json",
+    });
+
+    return `${url.origin}/w/api.php?${params.toString()}`;
+  } catch {
+    return null;
+  }
+}
+
+function getWikipediaSummaryUrl(wikipediaUrl: string): string | null {
+  try {
+    const url = new URL(wikipediaUrl);
+    const titlePrefix = "/wiki/";
+
+    if (!url.pathname.startsWith(titlePrefix)) return null;
+
+    const title = decodeURIComponent(url.pathname.slice(titlePrefix.length));
+    if (!title) return null;
+
+    return `${url.origin}/api/rest_v1/page/summary/${encodeURIComponent(title)}`;
+  } catch {
+    return null;
+  }
+}
+
+async function getWikipediaThumbnail(wikipediaUrl?: string): Promise<string> {
+  if (!wikipediaUrl) return "";
+
+  const apiUrl = getWikipediaApiUrl(wikipediaUrl);
+  const summaryUrl = getWikipediaSummaryUrl(wikipediaUrl);
+
+  try {
+    if (apiUrl) {
+      const res = await fetch(apiUrl, { next: { revalidate: 86400 } });
+      if (res.ok) {
+        const data = await res.json();
+        const pages = data?.query?.pages;
+        const firstPage = pages
+          ? (Object.values(pages)[0] as { thumbnail?: { source?: string } } | undefined)
+          : undefined;
+        const thumbnail = firstPage?.thumbnail?.source || "";
+        if (thumbnail) return thumbnail;
+      }
+    }
+
+    if (summaryUrl) {
+      const res = await fetch(summaryUrl, { next: { revalidate: 86400 } });
+      if (!res.ok) return "";
+
+      const data = await res.json();
+      return data?.thumbnail?.source || "";
+    }
+
+    return "";
+  } catch {
+    return "";
+  }
+}
+
 // Use Special:FilePath which doesn't get rate-limited like thumbnail URLs
-function getImageUrl(detail: PlaceDetail): string {
+async function getImageUrl(detail: PlaceDetail): Promise<string> {
   if (detail.image) {
     const match = detail.image.match(/File:(.+)$/);
     if (match) {
@@ -41,7 +116,12 @@ function getImageUrl(detail: PlaceDetail): string {
       return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(filename)}?width=400`;
     }
   }
-  return detail.preview?.source || "";
+
+  if (detail.preview?.source) {
+    return detail.preview.source;
+  }
+
+  return getWikipediaThumbnail(detail.wikipedia);
 }
 
 // Fetch details in small batches with delay to avoid rate limits
@@ -99,7 +179,7 @@ export async function GET(request: NextRequest) {
   const kinds = category || "interesting_places,amusements,cultural,sport,foods,shops,tourist_facilities";
 
   const placesRes = await fetch(
-    `${BASE}/radius?radius=10000&lon=${geo.lon}&lat=${geo.lat}&kinds=${kinds}&rate=2&limit=20&apikey=${API_KEY}`,
+    `${BASE}/radius?radius=10000&lon=${geo.lon}&lat=${geo.lat}&kinds=${kinds}&rate=2&limit=30&apikey=${API_KEY}`,
     { next: { revalidate: 3600 } }
   );
 
@@ -114,18 +194,19 @@ export async function GET(request: NextRequest) {
   const named = features
     .filter((f) => f.properties.name)
     .sort((a, b) => b.properties.rate - a.properties.rate)
-    .slice(0, 12);
+    .slice(0, 24);
 
   // Step 3: Fetch details in batches
   const xids = named.map((f) => f.properties.xid);
   const details = await fetchDetailsBatched(xids);
 
-  const places = details
+  const rankedPlaces = await Promise.all(
+    details
     .filter((d): d is PlaceDetail => d !== null && !!d.name)
-    .map((d) => ({
+    .map(async (d) => ({
       id: d.xid,
       name: d.name,
-      image_url: getImageUrl(d),
+      image_url: await getImageUrl(d),
       kinds: d.kinds
         ?.split(",")
         .slice(0, 3)
@@ -138,7 +219,12 @@ export async function GET(request: NextRequest) {
       description: d.wikipedia_extracts?.text?.slice(0, 200) || "",
       wikipedia: d.wikipedia || "",
       url: d.otm || "",
-    }));
+    }))
+  );
+
+  const withImages = rankedPlaces.filter((place) => !!place.image_url);
+  const withoutImages = rankedPlaces.filter((place) => !place.image_url);
+  const places = [...withImages, ...withoutImages].slice(0, 12);
 
   return Response.json({
     city: geo.name,

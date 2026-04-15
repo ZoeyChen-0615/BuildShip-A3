@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@clerk/nextjs";
 import { SearchBar } from "@/components/SearchBar";
 import { PlaceCard, Place } from "@/components/BusinessCard";
@@ -44,18 +44,38 @@ export default function Home() {
     loadCommunity();
   }, []);
 
-  const loadSavedIds = useCallback(async () => {
-    if (!isSignedIn) return;
-    const res = await fetch("/api/favorites");
-    if (res.ok) {
-      const data = await res.json();
-      setSavedIds(new Set(data.map((f: { place_id: string }) => f.place_id)));
-    }
-  }, [isSignedIn]);
-
   useEffect(() => {
-    loadSavedIds();
-  }, [loadSavedIds]);
+    let cancelled = false;
+
+    if (!isSignedIn) {
+      setTimeout(() => {
+        if (!cancelled) {
+          setSavedIds(new Set());
+        }
+      }, 0);
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    fetch("/api/favorites")
+      .then(async (res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (!cancelled) {
+          setSavedIds(new Set(data.map((f: { place_id: string }) => f.place_id)));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSavedIds(new Set());
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isSignedIn]);
 
   async function handleSearch(city: string, category: string) {
     setIsLoading(true);
